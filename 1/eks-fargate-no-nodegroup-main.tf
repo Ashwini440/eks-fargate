@@ -1,9 +1,13 @@
-# Get the default VPC
+
 resource "aws_eks_fargate_profile" "example" {
-  cluster_name = aws_eks_cluster.eks.name
-  fargate_profile_name = "example-fargate-profile"
+  cluster_name           = aws_eks_cluster.eks.name
+  fargate_profile_name   = "example-fargate-profile"
   pod_execution_role_arn = aws_iam_role.fargate_pod_execution.arn
-  subnet_ids = data.aws_subnets.default.ids
+
+  subnet_ids = [
+    data.aws_subnet.private1.id,
+    data.aws_subnet.private2.id
+  ]
 
   selector {
     namespace = "default"
@@ -47,6 +51,22 @@ data "aws_subnets" "default" {
     values = [data.aws_vpc.default.id]
   }
 }
+# Fetch private subnet 1
+data "aws_subnet" "private1" {
+  filter {
+    name   = "cidr-block"
+    values = ["172.31.64.0/20"]
+  }
+}
+
+# Fetch private subnet 2
+data "aws_subnet" "private2" {
+  filter {
+    name   = "cidr-block"
+    values = ["172.31.80.0/24"]
+  }
+}
+
 
 data "aws_security_group" "default" {
   filter {
