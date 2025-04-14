@@ -63,6 +63,13 @@ resource "kubernetes_secret" "upgrader_token" {
   type = "Opaque"
 }
 
+
+
+
+
+
+
+
 # Provider: Helm
 provider "helm" {
   kubernetes {
@@ -70,12 +77,9 @@ provider "helm" {
     token                  = data.aws_eks_cluster_auth.eks.token
     cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
   }
-
-  # Adding timeout setting for Helm provider
-  timeout = 600  # Set timeout to 10 minutes (600 seconds)
 }
 
-# Harness Delegate Module
+# Harness Delegate Module (without release block)
 module "delegate" {
   source            = "harness/harness-delegate/kubernetes"
   version           = "0.1.8"
@@ -138,21 +142,24 @@ module "delegate" {
           name: terraform-delegate-upgrader-token
           key: UPGRADER_TOKEN
   EOT
-release {
-    timeout = 600  # Timeout in seconds
-  }
 
   depends_on = [
     kubernetes_namespace.harness_delegate_ns,
     kubernetes_config_map.aws_logging,
     kubernetes_secret.upgrader_token
   ]
-
- 
 }
 
-# OPTIONAL: If you want to extract the actual token from the secret
-output "upgrader_token_decoded" {
-  value     = base64decode(kubernetes_secret.upgrader_token.data["UPGRADER_TOKEN"])
-  sensitive = true
+# Optional: Direct Helm release with timeout configuration
+resource "helm_release" "terraform_delegate" {
+  name       = "terraform-delegate"
+  namespace  = kubernetes_namespace.harness_delegate_ns.metadata[0].name
+  repository = "https://charts.harness.io"
+  chart      = "harness-delegate"
+  version    = "1.0.23"
+
+  timeout = 600  # Timeout in seconds (10 minutes)
+
+  values = [module.delegate.values]
+  depends_on = [module.delegate]
 }
