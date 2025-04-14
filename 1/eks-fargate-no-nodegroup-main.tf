@@ -112,14 +112,3 @@ resource "aws_eks_cluster" "eks" {
 
   depends_on = [aws_iam_role_policy_attachment.eks_policy]
 }
-resource "kubernetes_config_map" "aws_logging" {
-  metadata {
-    name      = "aws-logging"
-    namespace = "harness-delegate-ng"
-  }
-  data = {
-    logLevel      = "INFO"
-    logStreamName = "terraform-delegate"
-  }
-}
-
