@@ -12,6 +12,9 @@ resource "aws_eks_fargate_profile" "example" {
   selector {
     namespace = "default"
   }
+selector {
+  namespace = "harness-delegate-ng"
+}
 
   depends_on = [aws_eks_cluster.eks]
 }
