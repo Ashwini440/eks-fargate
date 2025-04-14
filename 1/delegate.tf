@@ -17,18 +17,18 @@ provider "kubernetes" {
   token                  = data.aws_eks_cluster_auth.eks.token
 }
 
-# Create Namespace if not already present (optional but recommended)
+# Create Namespace
 resource "kubernetes_namespace" "harness_delegate_ns" {
   metadata {
     name = "harness-delegate-ng"
   }
 }
 
-# Create aws-logging configmap (Fargate expects this)
+# aws-logging ConfigMap (required by Fargate)
 resource "kubernetes_config_map" "aws_logging" {
   metadata {
     name      = "aws-logging"
-    namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name  # safer than hardcoding
+    namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name
   }
 
   data = {
@@ -38,15 +38,20 @@ resource "kubernetes_config_map" "aws_logging" {
 
   depends_on = [kubernetes_namespace.harness_delegate_ns]
 }
+
+# Reference existing secret for the upgrader
 data "kubernetes_secret" "upgrader_token" {
   metadata {
     name      = "terraform-delegate-upgrader-token"
     namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name
   }
+data = {
+    token = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=r")  # paste the decoded token here
+  }
+ type = "Opaque"
 }
 
-
-# Provider: Helm (used by Harness Delegate module)
+# Provider: Helm
 provider "helm" {
   kubernetes {
     host                   = data.aws_eks_cluster.eks.endpoint
@@ -55,9 +60,11 @@ provider "helm" {
   }
 }
 
+# Harness Delegate Module
 module "delegate" {
   source            = "harness/harness-delegate/kubernetes"
   version           = "0.1.8"
+
   account_id        = "_Ci0EyZJTDmD1Kc1t_OA_A"
   delegate_token    = "ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM="
   delegate_name     = "terraform-delegate"
@@ -76,34 +83,34 @@ module "delegate" {
       limits:
         cpu: "1"
         memory: "2Gi"
-    
-  extraVolumes:
-    - name: aws-logging
-      configMap:
-        name: aws-logging
-    - name: config-volume
-      configMap:
-        name: terraform-delegate-upgrader-config
 
-  extraVolumeMounts:
-    - name: aws-logging
-      mountPath: /etc/aws-logging
-      readOnly: true
-    - name: config-volume
-      mountPath: /etc/config
-      readOnly: true
+    extraVolumes:
+      - name: aws-logging
+        configMap:
+          name: aws-logging
+      - name: config-volume
+        configMap:
+          name: terraform-delegate-upgrader-config
 
-  env:
-    - name: LOG_LEVEL
-      valueFrom:
-        configMapKeyRef:
-          name: aws-logging
-          key: logLevel
-    - name: LOG_STREAM_NAME
-      valueFrom:
-        configMapKeyRef:
-          name: aws-logging
-          key: logStreamName
+    extraVolumeMounts:
+      - name: aws-logging
+        mountPath: /etc/aws-logging
+        readOnly: true
+      - name: config-volume
+        mountPath: /etc/config
+        readOnly: true
+
+    env:
+      - name: LOG_LEVEL
+        valueFrom:
+          configMapKeyRef:
+            name: aws-logging
+            key: logLevel
+      - name: LOG_STREAM_NAME
+        valueFrom:
+          configMapKeyRef:
+            name: aws-logging
+            key: logStreamName
   EOT
 
   depends_on = [
@@ -112,3 +119,9 @@ module "delegate" {
     data.kubernetes_secret.upgrader_token
   ]
 }
+
+# OPTIONAL: If you want to extract the actual token from the secret
+ output "upgrader_token_decoded" {
+   value = base64decode(data.kubernetes_secret.upgrader_token.data.token)
+   sensitive = true
+ }
