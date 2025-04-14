@@ -63,9 +63,8 @@ module "delegate" {
   replicas          = 1
   upgrader_enabled  = true
 
-  # Pass resource requests and limits via values
-  values = [
-    <<-EOT
+  # Pass resource requests and limits via a single string value
+  values = <<-EOT
     resources:
       requests:
         cpu: "0.5"
@@ -73,10 +72,10 @@ module "delegate" {
       limits:
         cpu: "1"
         memory: "2Gi"
-    EOT
-  ]
+  EOT
 
   depends_on = [
     kubernetes_config_map.aws_logging
   ]
 }
+
