@@ -48,7 +48,6 @@ provider "helm" {
   }
 }
 
-# Harness Delegate Module with resource requests and limits via helm release values
 module "delegate" {
   source            = "harness/harness-delegate/kubernetes"
   version           = "0.1.8"
@@ -72,6 +71,17 @@ module "delegate" {
       limits:
         cpu: "1"
         memory: "2Gi"
+    
+    # Mount the aws-logging configmap to the pod
+    extraVolumes:
+      - name: aws-logging
+        configMap:
+          name: aws-logging
+          
+    extraVolumeMounts:
+      - name: aws-logging
+        mountPath: /etc/aws-logging
+        readOnly: true
   EOT
 
   depends_on = [
