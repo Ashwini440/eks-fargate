@@ -69,7 +69,7 @@ module "delegate" {
       limits:
         cpu: "1"
         memory: "2Gi"
-      
+    
   extraVolumes:
     - name: aws-logging
       configMap:
@@ -97,9 +97,10 @@ module "delegate" {
         configMapKeyRef:
           name: aws-logging
           key: logStreamName
+  EOT
+
   depends_on = [
-    kubernetes_config_map.aws_logging,
-    kubernetes_namespace.harness_delegate_ns
+    kubernetes_namespace.harness_delegate_ns,
+    kubernetes_config_map.aws_logging
   ]
 }
-
