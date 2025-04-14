@@ -70,6 +70,9 @@ provider "helm" {
     token                  = data.aws_eks_cluster_auth.eks.token
     cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
   }
+
+  # Adding timeout setting for Helm provider
+  timeout = 600  # Set timeout to 10 minutes (600 seconds)
 }
 
 # Harness Delegate Module
@@ -141,6 +144,9 @@ module "delegate" {
     kubernetes_config_map.aws_logging,
     kubernetes_secret.upgrader_token
   ]
+
+  # Optional: Increase timeout for Helm deployments here as well, if needed
+  timeout = 600  # 10 minutes
 }
 
 # OPTIONAL: If you want to extract the actual token from the secret
