@@ -13,7 +13,7 @@ data "aws_eks_cluster_auth" "eks" {
 # Provider: Kubernetes
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.eks.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)  # <-- FIXED
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.eks.token
 }
 
@@ -48,7 +48,7 @@ provider "helm" {
   }
 }
 
-# Harness Delegate Module
+# Harness Delegate Module with resource requests and limits
 module "delegate" {
   source            = "harness/harness-delegate/kubernetes"
   version           = "0.1.8"
@@ -62,6 +62,18 @@ module "delegate" {
   delegate_image    = "us-docker.pkg.dev/gar-prod-setup/harness-public/harness/delegate:25.03.85504"
   replicas          = 1
   upgrader_enabled  = true
+
+  # Add the resource requests and limits
+  resources = {
+    requests = {
+      cpu    = "0.5"    # Request 0.5 CPU
+      memory = "1Gi"    # Request 1Gi memory
+    }
+    limits = {
+      cpu    = "1"      # Limit to 1 CPU
+      memory = "2Gi"    # Limit to 2Gi memory
+    }
+  }
 
   depends_on = [
     kubernetes_config_map.aws_logging
