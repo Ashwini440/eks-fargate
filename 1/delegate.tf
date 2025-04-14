@@ -51,7 +51,6 @@ provider "helm" {
 module "delegate" {
   source            = "harness/harness-delegate/kubernetes"
   version           = "0.1.8"
-
   account_id        = "_Ci0EyZJTDmD1Kc1t_OA_A"
   delegate_token    = "ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM="
   delegate_name     = "terraform-delegate"
@@ -62,7 +61,6 @@ module "delegate" {
   replicas          = 1
   upgrader_enabled  = true
 
-  # Pass resource requests and limits via a single string value
   values = <<-EOT
     resources:
       requests:
@@ -71,39 +69,37 @@ module "delegate" {
       limits:
         cpu: "1"
         memory: "2Gi"
-    
-extraVolumes:
-  - name: aws-logging
-    configMap:
-      name: aws-logging
-  - name: config-volume
-    configMap:
-      name: terraform-delegate-upgrader-config
+      
+  extraVolumes:
+    - name: aws-logging
+      configMap:
+        name: aws-logging
+    - name: config-volume
+      configMap:
+        name: terraform-delegate-upgrader-config
 
-extraVolumeMounts:
-  - name: aws-logging
-    mountPath: /etc/aws-logging
-    readOnly: true
-  - name: config-volume
-    mountPath: /etc/config
-    readOnly: true
+  extraVolumeMounts:
+    - name: aws-logging
+      mountPath: /etc/aws-logging
+      readOnly: true
+    - name: config-volume
+      mountPath: /etc/config
+      readOnly: true
 
-    
-    # Additional volume mount to the container's environment
-    env:
-      - name: LOG_LEVEL
-        valueFrom:
-          configMapKeyRef:
-            name: aws-logging
-            key: logLevel
-      - name: LOG_STREAM_NAME
-        valueFrom:
-          configMapKeyRef:
-            name: aws-logging
-            key: logStreamName
-  EOT
-
+  env:
+    - name: LOG_LEVEL
+      valueFrom:
+        configMapKeyRef:
+          name: aws-logging
+          key: logLevel
+    - name: LOG_STREAM_NAME
+      valueFrom:
+        configMapKeyRef:
+          name: aws-logging
+          key: logStreamName
   depends_on = [
-    kubernetes_config_map.aws_logging
+    kubernetes_config_map.aws_logging,
+    kubernetes_namespace.harness_delegate_ns
   ]
 }
+
