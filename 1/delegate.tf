@@ -39,6 +39,7 @@ resource "kubernetes_config_map" "aws_logging" {
   depends_on = [kubernetes_namespace.harness_delegate_ns]
 }
 
+# Create Secret (storing the upgrader token)
 resource "kubernetes_secret" "upgrader_token" {
   metadata {
     name      = "terraform-delegate-upgrader-token"
@@ -46,12 +47,11 @@ resource "kubernetes_secret" "upgrader_token" {
   }
 
   data = {
-    UPGRADER_TOKEN = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=")  # 👈 Use the decoded token here
+    UPGRADER_TOKEN = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=")  # Token base64 encoded
   }
 
   type = "Opaque"
 }
-
 
 # Provider: Helm
 provider "helm" {
@@ -124,18 +124,17 @@ module "delegate" {
         secretKeyRef:
           name: terraform-delegate-upgrader-token
           key: UPGRADER_TOKEN
-EOT
-
+  EOT
 
   depends_on = [
     kubernetes_namespace.harness_delegate_ns,
     kubernetes_config_map.aws_logging,
-    data.kubernetes_secret.upgrader_token
+    kubernetes_secret.upgrader_token
   ]
 }
 
 # OPTIONAL: If you want to extract the actual token from the secret
- output "upgrader_token_decoded" {
-   value = base64decode(data.kubernetes_secret.upgrader_token.data.token)
-   sensitive = true
- }
+output "upgrader_token_decoded" {
+  value     = base64decode(kubernetes_secret.upgrader_token.data["UPGRADER_TOKEN"])
+  sensitive = true
+}
