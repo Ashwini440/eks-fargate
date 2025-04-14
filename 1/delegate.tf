@@ -72,16 +72,22 @@ module "delegate" {
         cpu: "1"
         memory: "2Gi"
     
-    # Mount the aws-logging configmap to the pod
-    extraVolumes:
-      - name: aws-logging
-        configMap:
-          name: aws-logging
-          
-    extraVolumeMounts:
-      - name: aws-logging
-        mountPath: /etc/aws-logging
-        readOnly: true
+extraVolumes:
+  - name: aws-logging
+    configMap:
+      name: aws-logging
+  - name: config-volume
+    configMap:
+      name: terraform-delegate-upgrader-config
+
+extraVolumeMounts:
+  - name: aws-logging
+    mountPath: /etc/aws-logging
+    readOnly: true
+  - name: config-volume
+    mountPath: /etc/config
+    readOnly: true
+
     
     # Additional volume mount to the container's environment
     env:
