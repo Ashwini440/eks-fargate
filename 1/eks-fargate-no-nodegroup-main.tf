@@ -9,9 +9,9 @@ resource "aws_eks_fargate_profile" "example" {
     data.aws_subnet.private2.id
   ]
 
-  selector {
-    namespace = "default"
-  }
+  #selector {
+   # namespace = "default"
+ # }
 selector {
   namespace = "harness-delegate-ng"
 }
