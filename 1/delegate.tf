@@ -138,9 +138,9 @@ module "delegate" {
           name: terraform-delegate-upgrader-token
           key: UPGRADER_TOKEN
   EOT
-# Adding the Helm release timeout directly here
-  timeout = 600  # Set Helm timeout to 600 seconds (10 minutes)
-
+release {
+    timeout = 600  # Timeout in seconds
+  }
 
   depends_on = [
     kubernetes_namespace.harness_delegate_ns,
