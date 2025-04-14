@@ -38,6 +38,13 @@ resource "kubernetes_config_map" "aws_logging" {
 
   depends_on = [kubernetes_namespace.harness_delegate_ns]
 }
+data "kubernetes_secret" "upgrader_token" {
+  metadata {
+    name      = "terraform-delegate-upgrader-token"
+    namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name
+  }
+}
+
 
 # Provider: Helm (used by Harness Delegate module)
 provider "helm" {
@@ -101,6 +108,7 @@ module "delegate" {
 
   depends_on = [
     kubernetes_namespace.harness_delegate_ns,
-    kubernetes_config_map.aws_logging
+    kubernetes_config_map.aws_logging,
+    data.kubernetes_secret.upgrader_token
   ]
 }
