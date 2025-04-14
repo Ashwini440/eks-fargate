@@ -145,8 +145,7 @@ module "delegate" {
     kubernetes_secret.upgrader_token
   ]
 
-  # Optional: Increase timeout for Helm deployments here as well, if needed
-  timeout = 600  # 10 minutes
+ 
 }
 
 # OPTIONAL: If you want to extract the actual token from the secret
