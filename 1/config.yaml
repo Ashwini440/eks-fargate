@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: aws-logging
-  namespace: harness-delegate-ng
-data:
-  logLevel: INFO
-  logStreamName: terraform-delegate
