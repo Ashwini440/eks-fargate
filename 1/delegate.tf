@@ -39,15 +39,25 @@ resource "kubernetes_config_map" "aws_logging" {
   depends_on = [kubernetes_namespace.harness_delegate_ns]
 }
 
-# Create Secret (storing the upgrader token)
+# Update existing secret or create a new one with Helm-managed metadata
 resource "kubernetes_secret" "upgrader_token" {
   metadata {
     name      = "terraform-delegate-upgrader-token"
     namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name
+
+    # Add Helm-managed labels and annotations
+    labels = {
+      "app.kubernetes.io/managed-by" = "Helm"
+    }
+
+    annotations = {
+      "meta.helm.sh/release-name"      = "terraform-delegate"
+      "meta.helm.sh/release-namespace" = "harness-delegate-ng"
+    }
   }
 
   data = {
-    UPGRADER_TOKEN = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=")  # Token base64 encoded
+    UPGRADER_TOKEN = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=")  # 👈 Use the decoded token here
   }
 
   type = "Opaque"
