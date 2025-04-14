@@ -39,17 +39,19 @@ resource "kubernetes_config_map" "aws_logging" {
   depends_on = [kubernetes_namespace.harness_delegate_ns]
 }
 
-# Reference existing secret for the upgrader
-data "kubernetes_secret" "upgrader_token" {
+resource "kubernetes_secret" "upgrader_token" {
   metadata {
     name      = "terraform-delegate-upgrader-token"
     namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name
   }
-data = {
-    token = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=r")  # paste the decoded token here
+
+  data = {
+    UPGRADER_TOKEN = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=")  # 👈 Use the decoded token here
   }
- type = "Opaque"
+
+  type = "Opaque"
 }
+
 
 # Provider: Helm
 provider "helm" {
