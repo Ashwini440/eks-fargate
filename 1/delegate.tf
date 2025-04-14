@@ -76,42 +76,54 @@ module "delegate" {
   upgrader_enabled  = true
 
   values = <<-EOT
-    resources:
-      requests:
-        cpu: "0.5"
-        memory: "1Gi"
-      limits:
-        cpu: "1"
-        memory: "2Gi"
+  resources:
+    requests:
+      cpu: "0.5"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
 
-    extraVolumes:
-      - name: aws-logging
-        configMap:
+  extraVolumes:
+    - name: aws-logging
+      configMap:
+        name: aws-logging
+    - name: config-volume
+      configMap:
+        name: terraform-delegate-upgrader-config
+    - name: upgrader-token-secret
+      secret:
+        secretName: terraform-delegate-upgrader-token
+
+  extraVolumeMounts:
+    - name: aws-logging
+      mountPath: /etc/aws-logging
+      readOnly: true
+    - name: config-volume
+      mountPath: /etc/config
+      readOnly: true
+    - name: upgrader-token-secret
+      mountPath: /etc/upgrader-token
+      readOnly: true
+
+  env:
+    - name: LOG_LEVEL
+      valueFrom:
+        configMapKeyRef:
           name: aws-logging
-      - name: config-volume
-        configMap:
-          name: terraform-delegate-upgrader-config
+          key: logLevel
+    - name: LOG_STREAM_NAME
+      valueFrom:
+        configMapKeyRef:
+          name: aws-logging
+          key: logStreamName
+    - name: UPGRADER_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: terraform-delegate-upgrader-token
+          key: UPGRADER_TOKEN
+EOT
 
-    extraVolumeMounts:
-      - name: aws-logging
-        mountPath: /etc/aws-logging
-        readOnly: true
-      - name: config-volume
-        mountPath: /etc/config
-        readOnly: true
-
-    env:
-      - name: LOG_LEVEL
-        valueFrom:
-          configMapKeyRef:
-            name: aws-logging
-            key: logLevel
-      - name: LOG_STREAM_NAME
-        valueFrom:
-          configMapKeyRef:
-            name: aws-logging
-            key: logStreamName
-  EOT
 
   depends_on = [
     kubernetes_namespace.harness_delegate_ns,
