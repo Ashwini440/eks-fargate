@@ -48,7 +48,7 @@ provider "helm" {
   }
 }
 
-# Harness Delegate Module with resource requests and limits
+# Harness Delegate Module with resource requests and limits via helm release values
 module "delegate" {
   source            = "harness/harness-delegate/kubernetes"
   version           = "0.1.8"
@@ -63,17 +63,18 @@ module "delegate" {
   replicas          = 1
   upgrader_enabled  = true
 
-  # Add the resource requests and limits
-  resources = {
-    requests = {
-      cpu    = "0.5"    # Request 0.5 CPU
-      memory = "1Gi"    # Request 1Gi memory
-    }
-    limits = {
-      cpu    = "1"      # Limit to 1 CPU
-      memory = "2Gi"    # Limit to 2Gi memory
-    }
-  }
+  # Pass resource requests and limits via values
+  values = [
+    <<-EOT
+    resources:
+      requests:
+        cpu: "0.5"
+        memory: "1Gi"
+      limits:
+        cpu: "1"
+        memory: "2Gi"
+    EOT
+  ]
 
   depends_on = [
     kubernetes_config_map.aws_logging
