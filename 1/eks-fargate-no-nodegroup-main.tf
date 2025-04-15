@@ -1,46 +1,5 @@
 
-resource "aws_eks_fargate_profile" "example" {
-  cluster_name           = aws_eks_cluster.eks.name
-  fargate_profile_name   = "example-fargate-profile"
-  pod_execution_role_arn = aws_iam_role.fargate_pod_execution.arn
 
-  subnet_ids = [
-    data.aws_subnet.private1.id,
-    data.aws_subnet.private2.id
-  ]
-
-  #selector {
-  #  namespace = "default"
- # }
-selector {
-  namespace = "harness-delegate-ng"
-}
-
-  depends_on = [aws_eks_cluster.eks]
-}
-
-# IAM Role for Fargate Pod Execution
-resource "aws_iam_role" "fargate_pod_execution" {
-  name = "eks-fargate-pod-execution-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = "sts:AssumeRole",
-        Effect = "Allow",
-        Principal = {
-          Service = "eks-fargate-pods.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "fargate_pod_execution_attachment" {
-  role       = aws_iam_role.fargate_pod_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
-}
 
 # Get the default VPC
 data "aws_vpc" "default" {
@@ -111,4 +70,46 @@ resource "aws_eks_cluster" "eks" {
   }
 
   depends_on = [aws_iam_role_policy_attachment.eks_policy]
+}
+resource "aws_eks_fargate_profile" "example" {
+  cluster_name           = aws_eks_cluster.eks.name
+  fargate_profile_name   = "example-fargate-profile"
+  pod_execution_role_arn = aws_iam_role.fargate_pod_execution.arn
+
+  subnet_ids = [
+    data.aws_subnet.private1.id,
+    data.aws_subnet.private2.id
+  ]
+
+  #selector {
+  #  namespace = "default"
+ # }
+selector {
+  namespace = "harness-delegate-ng"
+}
+
+  depends_on = [aws_eks_cluster.eks]
+}
+
+# IAM Role for Fargate Pod Execution
+resource "aws_iam_role" "fargate_pod_execution" {
+  name = "eks-fargate-pod-execution-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Principal = {
+          Service = "eks-fargate-pods.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "fargate_pod_execution_attachment" {
+  role       = aws_iam_role.fargate_pod_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
 }
