@@ -17,18 +17,16 @@ provider "kubernetes" {
   token                  = data.aws_eks_cluster_auth.eks.token
 }
 
-# Create Namespace
-resource "kubernetes_namespace" "harness_delegate_ns" {
+resource "kubernetes_namespace" "aws_observability" {
   metadata {
-    name = "harness-delegate-ng"
+    name = "aws-observability"
   }
 }
 
-# aws-logging ConfigMap (required by Fargate)
 resource "kubernetes_config_map" "aws_logging" {
   metadata {
     name      = "aws-logging"
-    namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name
+    namespace = kubernetes_namespace.aws_observability.metadata[0].name
   }
 
   data = {
@@ -36,8 +34,9 @@ resource "kubernetes_config_map" "aws_logging" {
     logStreamName = "terraform-delegate"
   }
 
-  depends_on = [kubernetes_namespace.harness_delegate_ns]
+  depends_on = [kubernetes_namespace.aws_observability]
 }
+
 
 # Update existing secret or create a new one with Helm-managed metadata
 resource "kubernetes_secret" "upgrader_token" {
