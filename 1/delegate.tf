@@ -26,19 +26,7 @@ provider "helm" {
   }
 }
 
-# Namespace: Harness Delegate
-resource "kubernetes_namespace" "harness_delegate_ns" {
-  metadata {
-    name = "harness-delegate-ng"
-  }
-}
 
-# Namespace: Observability
-#resource "kubernetes_namespace" "observability_ns" {
- # metadata {
-#    name = "observability"
- # }
-#}
 
 # ConfigMap: aws-logging (required by Fargate)
 resource "kubernetes_config_map" "aws_logging" {
