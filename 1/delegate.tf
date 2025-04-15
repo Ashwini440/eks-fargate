@@ -10,23 +10,41 @@ data "aws_eks_cluster_auth" "eks" {
   name = var.eks_cluster_name
 }
 
-# Provider: Kubernetes
+# Kubernetes Provider
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.eks.endpoint
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.eks.token
 }
 
-resource "kubernetes_namespace" "aws_observability" {
-  metadata {
-    name = "aws-observability"
+# Helm Provider
+provider "helm" {
+  kubernetes {
+    host                   = data.aws_eks_cluster.eks.endpoint
+    token                  = data.aws_eks_cluster_auth.eks.token
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
   }
 }
 
+# Namespace: Harness Delegate
+resource "kubernetes_namespace" "harness_delegate_ns" {
+  metadata {
+    name = "harness-delegate-ng"
+  }
+}
+
+# Namespace: Observability
+resource "kubernetes_namespace" "observability_ns" {
+  metadata {
+    name = "observability"
+  }
+}
+
+# ConfigMap: aws-logging (required by Fargate)
 resource "kubernetes_config_map" "aws_logging" {
   metadata {
     name      = "aws-logging"
-    namespace = kubernetes_namespace.aws_observability.metadata[0].name
+    namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name
   }
 
   data = {
@@ -34,17 +52,15 @@ resource "kubernetes_config_map" "aws_logging" {
     logStreamName = "terraform-delegate"
   }
 
-  depends_on = [kubernetes_namespace.aws_observability]
+  depends_on = [kubernetes_namespace.harness_delegate_ns]
 }
 
-
-# Update existing secret or create a new one with Helm-managed metadata
+# Secret: Upgrader token
 resource "kubernetes_secret" "upgrader_token" {
   metadata {
     name      = "terraform-delegate-upgrader-token"
     namespace = kubernetes_namespace.harness_delegate_ns.metadata[0].name
 
-    # Add Helm-managed labels and annotations
     labels = {
       "app.kubernetes.io/managed-by" = "Helm"
     }
@@ -56,32 +72,32 @@ resource "kubernetes_secret" "upgrader_token" {
   }
 
   data = {
-    UPGRADER_TOKEN = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=")  # 👈 Use the decoded token here
+    UPGRADER_TOKEN = base64encode("ZDUwMDU5ODE0OGY0M2QyMGVhZjhlNjY4YzIwOThiNTM=")  # already base64-encoded
   }
 
   type = "Opaque"
-lifecycle {
+
+  lifecycle {
     create_before_destroy = true
   }
 }
 
-
-
-
-
-
-
-
-# Provider: Helm
-provider "helm" {
-  kubernetes {
-    host                   = data.aws_eks_cluster.eks.endpoint
-    token                  = data.aws_eks_cluster_auth.eks.token
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+# ConfigMap: Observability config (example)
+resource "kubernetes_config_map" "observability_config" {
+  metadata {
+    name      = "observability-config"
+    namespace = kubernetes_namespace.observability_ns.metadata[0].name
   }
+
+  data = {
+    telemetry_enabled = "true"
+    log_level         = "DEBUG"
+  }
+
+  depends_on = [kubernetes_namespace.observability_ns]
 }
 
-# Harness Delegate Module (without release block)
+# Harness Delegate Module
 module "delegate" {
   source            = "harness/harness-delegate/kubernetes"
   version           = "0.1.8"
@@ -150,18 +166,4 @@ module "delegate" {
     kubernetes_config_map.aws_logging,
     kubernetes_secret.upgrader_token
   ]
-}
-
-# Optional: Direct Helm release with timeout configuration
-resource "helm_release" "terraform_delegate" {
-  name       = "terraform-delegate"
-  namespace  = kubernetes_namespace.harness_delegate_ns.metadata[0].name
-  repository = "https://charts.harness.io"
-  chart      = "harness-delegate"
-  version    = "1.0.23"
-
-  timeout = 600  # Timeout in seconds (10 minutes)
-
-  values = [module.delegate.values]
-  depends_on = [module.delegate]
 }
