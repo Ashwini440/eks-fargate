@@ -71,6 +71,15 @@ resource "aws_eks_cluster" "eks" {
 
   depends_on = [aws_iam_role_policy_attachment.eks_policy]
 }
+
+
+# Namespace: Harness Delegate
+resource "kubernetes_namespace" "harness_delegate_ns" {
+  metadata {
+    name = "harness-delegate-ng"
+  }
+}
+
 resource "aws_eks_fargate_profile" "example" {
   cluster_name           = aws_eks_cluster.eks.name
   fargate_profile_name   = "example-fargate-profile"
