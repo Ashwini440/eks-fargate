@@ -77,10 +77,7 @@ resource "kubernetes_secret" "upgrader_token" {
 
   type = "Opaque"
 
-  lifecycle {
-    create_before_destroy = true
   }
-}
 
 # ConfigMap: Observability config (example)
 resource "kubernetes_config_map" "observability_config" {
